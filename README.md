@@ -60,18 +60,16 @@ with WangganGPS(port='COM5', output_dir='downloads') as gps:
 ```bash
 cd examples
 python basic_usage.py      # Simple download and export
-python bulk_download.py    # Bulk export to multiple formats
-python advanced_usage.py   # Test all modes with statistics
+python bulk_download.py    # Export to multiple formats
+python advanced_usage.py   # Advanced usage with statistics
 ```
 
 ---
 
 ## ✨ Features
 
-### Three Download Modes
+### Download Mode
 - **Tilde (0x7E)**: Full data export with headers and timestamps
-- **Exclamation (0x21)**: Bulk coordinate dump without headers
-- **Caret (0x5E)**: Binary metadata export for debugging
 
 ### Four Data Types Supported
 - **Track**: GPS tracks/routes (k,l format)
@@ -98,27 +96,7 @@ python advanced_usage.py   # Test all modes with statistics
 
 ## � Usage Examples
 
-### Download All Coordinates (Bulk Mode)
-
-```python
-from wanggan_gps import WangganGPS, DownloadMode, OutputFormat
-
-gps = WangganGPS(port='COM5')
-if gps.connect():
-    # Download all coordinates without headers
-    files = gps.download_and_export(
-        mode=DownloadMode.EXCLAMATION,
-        format=OutputFormat.CSV,
-        save_raw=True
-    )
-    print(f"Created {len(files)} file(s)")
-    gps.disconnect()
-```
-
 ### Export to Multiple Formats
-
-```python
-### Example 2: Context Manager (Recommended)
 
 ```python
 with WangganGPS(port='COM5') as gps:
@@ -170,7 +148,7 @@ WangganGPS(
 
 ```python
 gps.download(
-    mode=DownloadMode.TILDE,  # Download mode (TILDE, EXCLAMATION, or CARET)
+    mode=DownloadMode.TILDE,  # Download mode (TILDE only)
     save_raw=False,           # Save raw data to file
     raw_filename=None         # Custom filename for raw data
 )
@@ -189,7 +167,7 @@ gps.export_tracks(
 
 ---
 
-## 📖 Download Modes
+## 📖 Download Mode
 
 ### Tilde Mode (0x7E) - `DownloadMode.TILDE`
 
@@ -221,25 +199,6 @@ n0831,k0000019806,l0000012137;t202510241548,N0004
 -008d35'27.326",+41d06'54.784",01679;
 !
 ```
-
-### Exclamation Mode (0x21) - `DownloadMode.EXCLAMATION`
-
-**Best for**: Bulk coordinate extraction without metadata
-
-**Output**: Raw coordinates only (no headers, no type info)
-
-**Example output**:
-```text
--008d35'25.367",+41d06'55.144",01702;
--008d35'25.371",+41d06'55.177",01700;
-!
-```
-
-### Caret Mode (0x5E) - `DownloadMode.CARET`
-
-**Best for**: Internal debugging/diagnostics
-
-**Output**: Binary metadata (15-20 bytes)
 
 ---
 
@@ -367,7 +326,7 @@ pip install pyserial
 
 Based on firmware reverse engineering using Ghidra:
 
-- **Trigger bytes**: 0x7E (Tilde), 0x21 (Exclamation), 0x5E (Caret)
+- **Trigger byte**: 0x7E (Tilde)
 - **Command handler**: `FUN_0000fa58()` state machine
 - **Export functions**: `FUN_000060e0()`, `FUN_0000368c(param)`
 - **Record separator**: '!' (0x21) marks end of each record
@@ -459,7 +418,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 **Current Version**: 1.0.0 (2025-10-26)
 
 **Features**:
-- ✅ Three download modes (Tilde, Exclamation, Caret)
+- ✅ Tilde download mode for complete data export
 - ✅ Four data type support (Track, Area, Distance, Waypoint)
 - ✅ Intelligent header parsing with type detection
 - ✅ GPX, KML, CSV export formats
