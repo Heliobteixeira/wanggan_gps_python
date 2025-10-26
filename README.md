@@ -12,6 +12,24 @@ A Python library for interfacing with Wanggan handheld GPS locators. Download GP
 
 ## ⚡ Quick Start
 
+### Two Ways to Use
+
+**🖱️ Graphical Interface (Recommended for Non-Programmers)**
+```bash
+# Install with GUI support
+pip install -e ".[gui]"
+
+# Launch the GUI
+python wanggan_gps_gui.py
+```
+See [GUI User Guide](docs/GUI_USER_GUIDE.md) for detailed instructions.
+
+**💻 Python Library (For Developers)**
+```bash
+# Install the library
+pip install -e .
+```
+
 ### Installation
 
 #### Option 1: Install from Source (Recommended)
@@ -23,6 +41,9 @@ cd wanggan-gps-python
 
 # Install the library with dependencies
 pip install -e .
+
+# Or install with GUI support
+pip install -e ".[gui]"
 ```
 
 The `-e` flag installs in "editable" mode, so any changes you make are immediately available.
@@ -33,6 +54,9 @@ If you just want to run the scripts without installing the library:
 
 ```bash
 pip install pyserial
+
+# Add easygui for GUI interface
+pip install easygui
 ```
 
 #### Option 3: Install from PyPI (Future)
@@ -41,6 +65,8 @@ Once published to PyPI, you'll be able to install with:
 
 ```bash
 pip install wanggan-gps
+# Or with GUI support
+pip install wanggan-gps[gui]
 ```
 
 ### Basic Usage

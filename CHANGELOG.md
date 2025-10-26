@@ -2,6 +2,59 @@
 
 All notable changes to the Wanggan D6E GPS Library project.
 
+## [Unreleased] - gui-development branch
+
+### Added
+
+#### GUI Interface (New)
+- **EasyGUI-based graphical interface** (`wanggan_gps_gui.py`)
+  - User-friendly interface designed for non-technical users
+  - No command-line knowledge required
+  - Simple point-and-click operation
+  
+#### GUI Features
+- **Welcome Screen**: Introduction and device compatibility info
+- **Connection Setup**: Auto-detection of COM ports with manual entry option
+- **Download Mode Selection**: Clear descriptions of three modes:
+  - Full Download with Details (Tilde mode)
+  - Quick Coordinate Download (Exclamation mode)
+  - Technical/Debug Mode (Caret mode)
+- **Export Format Selection**: Multi-select checkboxes for GPX, KML, CSV, RAW
+- **Export Options**: Split files or combine, custom output directory
+- **Progress & Feedback**: Status messages and success/error dialogs
+- **Advanced Settings**: Baudrate, timeout, and directory configuration
+- **Help System**: Built-in usage guide and about dialog
+- **Platform Support**: Works on Windows, Linux, and macOS
+
+#### GUI Workflow
+- Guided step-by-step process from connection to export
+- Automatic error detection and user-friendly error messages
+- Option to open output folder after successful export
+- Ability to perform multiple downloads without reconnecting
+- Main menu for repeated operations
+
+#### Documentation
+- Comprehensive GUI User Guide (`docs/GUI_USER_GUIDE.md`)
+- GUI usage example (`examples/gui_usage.py`)
+- Updated README with GUI installation instructions
+- Launch scripts for Windows (`launch_gui.bat`) and Linux/Mac (`launch_gui.sh`)
+
+#### Installation
+- Added easygui as optional dependency in `setup.py`
+- Install with: `pip install -e ".[gui]"`
+
+### Changed
+- Updated README.md to highlight GUI as recommended option for non-programmers
+- Modified setup.py to include GUI extras requirement
+
+### Technical Details
+- Uses easygui library for cross-platform GUI dialogs
+- Imports and wraps existing WangganGPS class
+- No changes to core library functionality
+- Handles all exceptions with user-friendly messages
+- Auto-detects available serial ports
+- Platform-specific folder opening (Windows/Mac/Linux)
+
 ## [1.0.0] - 2025-10-26
 
 ### Added
