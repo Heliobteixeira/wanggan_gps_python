@@ -153,48 +153,93 @@ class WangganGPSGUI:
     
     def show_connection_screen(self) -> bool:
         """
-        Display connection setup screen with port selection.
+        Display connection setup screen with port selection and refresh capability.
         
         Returns:
             True if connection successful, False otherwise
         """
-        # Get available ports
-        available_ports = self.get_available_ports()
-        
-        # Add option for manual entry
-        available_ports.append("Enter manually...")
-        
-        message = (
-            "Select your GPS device's COM port:\n\n"
-            "If you're not sure which port to use:\n"
-            "- Windows: Check Device Manager → Ports (COM & LPT)\n"
-            "- Linux/Mac: Look for /dev/ttyUSB* or /dev/ttyACM*\n\n"
-            f"Current setting: {self.port}"
-        )
-        
-        selected_port = easygui.choicebox(
-            message,
-            "Connect to GPS Device",
-            available_ports
-        )
-        
-        if not selected_port:
-            return False  # User cancelled
-        
-        # Handle manual entry
-        if selected_port == "Enter manually...":
-            selected_port = easygui.enterbox(
-                "Enter the COM port name:",
-                "Manual Port Entry",
-                default=self.port
+        while True:  # Loop to allow refresh
+            # Get available ports with details
+            available_ports = self.get_available_ports()
+            
+            # Get detailed port information
+            ports_with_details = []
+            try:
+                import serial.tools.list_ports
+                port_objects = serial.tools.list_ports.comports()
+                for port in port_objects:
+                    # Create detailed description
+                    detail = f"{port.device}"
+                    if port.description and port.description != port.device:
+                        detail += f" - {port.description}"
+                    if port.manufacturer:
+                        detail += f" ({port.manufacturer})"
+                    ports_with_details.append(detail)
+            except:
+                # Fallback to simple list
+                ports_with_details = available_ports
+            
+            if not ports_with_details:
+                ports_with_details = ["No ports detected - Enter manually..."]
+            
+            # Add refresh and manual entry options
+            ports_with_details.append("🔄 Refresh port list")
+            ports_with_details.append("✏️ Enter manually...")
+            
+            message = (
+                "Select your GPS device's COM port:\n\n"
+                "📌 Tip: If your device doesn't appear, try:\n"
+                "   • Reconnecting the USB cable\n"
+                "   • Clicking 'Refresh port list'\n"
+                "   • Entering the port manually\n\n"
+                f"Current setting: {self.port}\n"
             )
+            
+            selected_port = easygui.choicebox(
+                message,
+                "Connect to GPS Device",
+                ports_with_details
+            )
+            
             if not selected_port:
-                return False
-        
-        self.port = selected_port
-        
-        # Attempt to connect
-        return self.connect_to_device()
+                return False  # User cancelled
+            
+            # Handle refresh
+            if "Refresh" in selected_port:
+                continue  # Loop back to refresh
+            
+            # Handle manual entry
+            if "manually" in selected_port:
+                selected_port = easygui.enterbox(
+                    "Enter the COM port name:\n\n"
+                    "Examples:\n"
+                    "  Windows: COM3, COM5, COM7\n"
+                    "  Linux: /dev/ttyUSB0, /dev/ttyACM0\n"
+                    "  Mac: /dev/cu.usbserial",
+                    "Manual Port Entry",
+                    default=self.port
+                )
+                if not selected_port:
+                    continue  # Go back to port list
+            else:
+                # Extract just the port name from the detailed description
+                selected_port = selected_port.split(" - ")[0].split(" (")[0]
+            
+            self.port = selected_port
+            
+            # Attempt to connect
+            if self.connect_to_device():
+                return True
+            else:
+                # Ask if user wants to try another port
+                retry = easygui.ccbox(
+                    "Connection failed. Would you like to try another port?",
+                    "Connection Failed",
+                    choices=["Try Again", "Cancel"]
+                )
+                if not retry:
+                    return False
+                # Loop back to show port selection again
     
     def connect_to_device(self) -> bool:
         """
@@ -244,56 +289,60 @@ class WangganGPSGUI:
     
     def show_download_mode_screen(self) -> Optional[DownloadMode]:
         """
-        Display download mode selection screen with clear descriptions.
+        Display download mode selection screen with simplified options.
         
         Returns:
             Selected DownloadMode or None if cancelled
         """
         message = (
-            "Choose how you want to download data from your GPS device:\n\n"
-            "Select the download mode that best fits your needs."
+            "How do you want to download your GPS data?\n\n"
+            "📋 Full Download is recommended for most users.\n"
+            "It includes all track details, timestamps, and coordinates."
         )
         
+        # Simplified to only show Full Download for now
         choices = [
-            "📋 Full Download with Details - Complete records with timestamps and IDs (Recommended)",
-            "⚡ Quick Coordinate Download - Just GPS coordinates, faster download",
-            "🔧 Technical/Debug Mode - Binary metadata for advanced troubleshooting"
+            "� Full Download (Recommended)",
         ]
         
-        choice = easygui.choicebox(message, "Select Download Mode", choices)
+        choice = easygui.buttonbox(
+            message, 
+            "Download Mode", 
+            choices=choices + ["◀️ Back", "❌ Cancel"]
+        )
         
-        if not choice:
+        if not choice or "Cancel" in choice:
             return None
         
-        # Map choice to DownloadMode
-        if "Full Download" in choice:
-            return DownloadMode.TILDE
-        elif "Quick Coordinate" in choice:
-            return DownloadMode.EXCLAMATION
-        elif "Technical" in choice:
-            return DownloadMode.CARET
+        if "Back" in choice:
+            return None
         
-        return None
+        # Always return TILDE mode (Full Download)
+        return DownloadMode.TILDE
     
     def show_export_options_screen(self) -> Optional[dict]:
         """
-        Display export format and options selection screen.
+        Display export format and options selection screen with simplified interface.
         
         Returns:
             Dictionary with export settings or None if cancelled
         """
-        # Step 1: Select export formats (multiple selection)
+        # Simplified format selection with checkboxes
+        format_message = (
+            "Choose how to save your GPS data:\n\n"
+            "💡 Tip: You can select multiple formats.\n"
+            "   Each format works with different software."
+        )
+        
         format_choices = [
-            "GPX - Standard GPS format (compatible with most GPS software)",
-            "KML - Google Earth format (view tracks in Google Earth)",
-            "CSV - Spreadsheet format (for Excel and data analysis)",
-            "RAW - Original device output (preserve raw data)"
+            "✅ GPX - Works with most GPS apps",
+            "🌍 KML - For Google Earth",
+            "📊 CSV - For Excel spreadsheets",
         ]
         
         selected_formats = easygui.multchoicebox(
-            "Select one or more export formats:\n\n"
-            "You can select multiple formats to export the same data in different ways.",
-            "Export Format Selection",
+            format_message,
+            "Choose Export Format(s)",
             format_choices
         )
         
@@ -308,38 +357,33 @@ class WangganGPSGUI:
             formats.append(OutputFormat.KML)
         if any("CSV" in f for f in selected_formats):
             formats.append(OutputFormat.CSV)
-        if any("RAW" in f for f in selected_formats):
-            formats.append(OutputFormat.RAW)
         
-        # Step 2: Additional options
+        # Add RAW format by default (for backup)
+        formats.append(OutputFormat.RAW)
+        
+        # Simplified options - only show output directory option
         option_message = (
-            "Export Options:\n\n"
-            f"Current output directory: {self.output_dir}\n\n"
-            "Choose additional settings:"
+            "Export Settings:\n\n"
+            f"📁 Files will be saved to: {self.output_dir}\n\n"
+            "Each track/waypoint will be saved as a separate file.\n"
+            "This makes it easier to manage individual GPS records."
         )
         
         option_choices = [
-            "Split into separate files (one file per track/waypoint)",
-            "Combine all data into single file",
-            "Change output directory",
-            "Continue with current settings"
+            "✅ Continue with these settings",
+            "📁 Change output folder",
+            "◀️ Back"
         ]
         
-        option = easygui.buttonbox(option_message, "Export Options", option_choices)
+        option = easygui.buttonbox(option_message, "Export Settings", option_choices)
         
-        if not option:
+        if not option or "Back" in option:
             return None
         
-        split_by_track = True  # Default
-        
-        if "separate files" in option:
-            split_by_track = True
-        elif "single file" in option:
-            split_by_track = False
-        elif "Change output" in option:
+        if "Change output" in option:
             new_dir = easygui.diropenbox(
-                "Select output directory:",
-                "Output Directory",
+                "Select where to save your GPS files:",
+                "Choose Output Folder",
                 default=self.output_dir
             )
             if new_dir:
@@ -347,9 +391,10 @@ class WangganGPSGUI:
                 if self.gps:
                     self.gps.output_dir = Path(new_dir)
         
+        # Always split by track (removed the combine option)
         return {
             'formats': formats,
-            'split_by_track': split_by_track
+            'split_by_track': True
         }
     
     def show_action_screen(self, download_mode: DownloadMode, export_options: dict) -> bool:
@@ -364,26 +409,37 @@ class WangganGPSGUI:
             True if operation completed successfully
         """
         mode_names = {
-            DownloadMode.TILDE: "Full Download with Details",
-            DownloadMode.EXCLAMATION: "Quick Coordinate Download",
-            DownloadMode.CARET: "Technical/Debug Mode"
+            DownloadMode.TILDE: "Full Download",
+            DownloadMode.EXCLAMATION: "Quick Download",
+            DownloadMode.CARET: "Debug Mode"
         }
         
-        format_names = ", ".join([f.value.upper() for f in export_options['formats']])
+        # Create user-friendly format list
+        format_display = []
+        for fmt in export_options['formats']:
+            if fmt == OutputFormat.GPX:
+                format_display.append("GPX")
+            elif fmt == OutputFormat.KML:
+                format_display.append("KML")
+            elif fmt == OutputFormat.CSV:
+                format_display.append("CSV")
+            elif fmt == OutputFormat.RAW:
+                format_display.append("RAW (backup)")
+        
+        format_names = ", ".join(format_display)
         
         message = (
-            "Ready to download!\n\n"
-            f"Download Mode: {mode_names[download_mode]}\n"
-            f"Export Formats: {format_names}\n"
-            f"Output Directory: {self.output_dir}\n"
-            f"Split by record: {'Yes' if export_options['split_by_track'] else 'No'}\n\n"
-            "Choose an action:"
+            "✅ Ready to download your GPS data!\n\n"
+            f"📋 Mode: {mode_names[download_mode]}\n"
+            f"💾 Formats: {format_names}\n"
+            f"📁 Save to: {self.output_dir}\n\n"
+            "⏱️ This will take 10-60 seconds.\n"
+            "Progress will be shown in the console window."
         )
         
         choices = [
-            "⬇️  Download & Export - Download and convert to selected formats",
-            "📥 Download Only (RAW) - Just download and save raw data",
-            "◀️  Back - Change settings",
+            "⬇️ Start Download",
+            "◀️ Back",
             "❌ Cancel"
         ]
         
@@ -396,10 +452,8 @@ class WangganGPSGUI:
             return False
         
         # Perform the download operation
-        if "Download & Export" in choice:
+        if "Start Download" in choice:
             return self.perform_download_and_export(download_mode, export_options)
-        elif "Download Only" in choice:
-            return self.perform_download_only(download_mode)
         
         return False
     
@@ -414,24 +468,20 @@ class WangganGPSGUI:
             True if successful
         """
         try:
-            # Show progress message
-            easygui.msgbox(
-                "Starting download...\n\n"
-                "This may take a moment depending on the amount of data.\n"
-                "Please wait...",
-                "Downloading",
-                ok_button="OK (Download in progress)"
-            )
+            # Show brief info message (non-blocking would be better but easygui limitation)
+            print("Starting download...")
+            print("Sending download trigger to GPS device...")
+            print("Please wait while data is being received...")
             
-            # Perform download
+            # Perform download (this is where the actual work happens)
             data = self.gps.download(mode=download_mode, save_raw=True)
             
             if data:
                 easygui.msgbox(
-                    f"✅ Download successful!\n\n"
+                    f"✅ Download complete!\n\n"
                     f"Downloaded {len(data)} bytes\n"
-                    f"Raw data saved to: {self.output_dir}",
-                    "Success"
+                    f"Data saved to: {self.output_dir}",
+                    "Download Complete"
                 )
                 
                 # Ask if user wants to open output folder
@@ -446,7 +496,7 @@ class WangganGPSGUI:
                 easygui.msgbox(
                     "❌ No data received from device.\n\n"
                     "Please try again or check device settings.",
-                    "No Data"
+                    "No Data Received"
                 )
                 return False
                 
@@ -469,31 +519,35 @@ class WangganGPSGUI:
             True if successful
         """
         try:
-            # Show progress message
-            easygui.msgbox(
-                "Starting download and export...\n\n"
-                "This may take a moment.\n"
-                "Please wait...",
-                "Processing",
-                ok_button="OK (Processing...)"
-            )
+            # Print to console for progress feedback
+            print("\n" + "="*50)
+            print("DOWNLOAD STARTED")
+            print("="*50)
+            print("Sending download trigger to GPS device...")
+            print("Waiting for data from device...")
+            print("This may take 10-60 seconds depending on data size...")
+            print("="*50 + "\n")
             
-            # Download data
+            # Download data (this is where the actual work happens)
             data = self.gps.download(mode=download_mode, save_raw=True)
             
             if not data:
                 easygui.msgbox(
                     "❌ No data received from device.\n\n"
                     "Please try again or check device settings.",
-                    "No Data"
+                    "No Data Received"
                 )
                 return False
+            
+            print(f"\n✓ Download complete! Received {len(data)} bytes")
+            print("Now converting to selected formats...")
             
             # Export to each selected format
             all_files = []
             
             for format_type in export_options['formats']:
                 try:
+                    print(f"  • Exporting to {format_type.value.upper()}...")
                     files = self.gps.export_tracks(
                         data,
                         format=format_type,
@@ -501,7 +555,9 @@ class WangganGPSGUI:
                     )
                     if files:
                         all_files.extend(files)
+                        print(f"    ✓ Created {len(files)} file(s)")
                 except Exception as e:
+                    print(f"    ✗ Error: {str(e)}")
                     easygui.msgbox(
                         f"⚠️ Warning: Could not export to {format_type.value.upper()}\n\n"
                         f"Error: {str(e)}\n\n"
@@ -516,9 +572,9 @@ class WangganGPSGUI:
                     file_list += f"\n  ... and {len(all_files) - 10} more files"
                 
                 easygui.msgbox(
-                    f"✅ Export successful!\n\n"
+                    f"✅ Export complete!\n\n"
                     f"Created {len(all_files)} file(s):\n\n{file_list}",
-                    "Success"
+                    "Export Complete"
                 )
                 
                 # Ask if user wants to open output folder
