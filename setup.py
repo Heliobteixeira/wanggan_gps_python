@@ -41,6 +41,9 @@ setup(
             "black>=22.0",
             "flake8>=4.0",
         ],
+        "gui": [
+            "easygui>=0.98.0",
+        ],
     },
     py_modules=["wanggan_gps"],
     keywords="gps handheld locator wanggan d6e d7 serial hardware gpx kml",
